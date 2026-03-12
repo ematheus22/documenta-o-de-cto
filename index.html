@@ -332,6 +332,11 @@ tbody td{padding:6px 10px;vertical-align:middle;}
 .cto-label{background:rgba(10,20,50,.75);color:#fff;border:none;box-shadow:none;font-size:8.5px;font-family:'Outfit',sans-serif;font-weight:700;padding:1px 5px;border-radius:3px;}
 
 .cto-row-hover:hover{background:var(--bg2);}
+
+.pop-area-poly-ok path{animation:polyPulseOk 3s ease-in-out infinite;}
+.pop-area-poly-and path{animation:polyPulseAnd 2.5s ease-in-out infinite;}
+@keyframes polyPulseOk{0%,100%{fill-opacity:0.26;stroke-opacity:0.95}50%{fill-opacity:0.40;stroke-opacity:1}}
+@keyframes polyPulseAnd{0%,100%{fill-opacity:0.30;stroke-opacity:0.95}50%{fill-opacity:0.46;stroke-opacity:1}}
 </style>
 </head>
 <body>
@@ -353,7 +358,7 @@ tbody td{padding:6px 10px;vertical-align:middle;}
     <button class="sb-btn" id="nav-alertas" onclick="goPage('alertas')"><i class="fas fa-bell"></i> Alertas <span class="sb-badge" id="alertBadge">0</span></button>
     <div class="sb-sec">Localizações</div>
     <div id="popTree"></div>
-    <button class="sb-btn" onclick="openModal('ovAddPOP')" style="margin-top:4px;border:1px dashed var(--border2);border-radius:var(--r-sm);"><i class="fas fa-plus"></i> Nova Localização</button>
+    <button class="sb-btn" onclick="addPOPinGrupo=null;const el=document.getElementById('addPopGrupoInfo');if(el)el.style.display='none';openModal('ovAddPOP')" style="margin-top:4px;border:1px dashed var(--border2);border-radius:var(--r-sm);"><i class="fas fa-plus"></i> Nova Localização</button>
     <button class="sb-btn" onclick="openAddGrupoModal()" style="margin-top:2px;border:1px dashed var(--border2);border-radius:var(--r-sm);"><i class="fas fa-layer-group"></i> Novo Grupo</button>
   </div>
   <div class="sb-bottom">
@@ -398,6 +403,14 @@ tbody td{padding:6px 10px;vertical-align:middle;}
         <div class="kpi"><div><div class="kpi-lbl">Total Clientes</div><div class="kpi-val" id="kTot">0</div><div class="kpi-sub" id="kTotSub">—</div></div><div class="kpi-icon" style="background:var(--blue-l);color:var(--blue)"><i class="fas fa-users"></i></div></div>
         <div class="kpi"><div><div class="kpi-lbl">Status OK</div><div class="kpi-val" id="kOk">0</div><div class="kpi-sub" id="kOkSub">—</div></div><div class="kpi-icon" style="background:var(--green-l);color:var(--green)"><i class="fas fa-check-circle"></i></div></div>
         <div class="kpi"><div><div class="kpi-lbl">Pendentes</div><div class="kpi-val" id="kPend">0</div><div class="kpi-sub" id="kPendSub">—</div></div><div class="kpi-icon" style="background:var(--yellow-l);color:var(--yellow)"><i class="fas fa-clock"></i></div></div>
+      </div>
+      <!-- Filtro de localização para os gráficos -->
+      <div style="display:flex;align-items:center;gap:10px;padding:4px 0 2px;">
+        <span style="font-size:11px;font-weight:700;color:var(--txt2);"><i class="fas fa-filter" style="margin-right:4px;color:var(--blue);"></i>Filtrar gráficos por localização:</span>
+        <select id="overviewPopFilter" onchange="setOverviewFilter(this.value)" style="font-size:11px;font-weight:600;padding:4px 10px;border:1.5px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--txt);cursor:pointer;font-family:'Outfit',sans-serif;">
+          <option value="">Todas as localizações</option>
+        </select>
+        <span id="overviewFilterBadge" style="display:none;font-size:10px;background:var(--blue-l);color:var(--blue);border-radius:20px;padding:2px 10px;font-weight:700;"></span>
       </div>
       <div class="chart-grid g3">
 
@@ -459,6 +472,7 @@ tbody td{padding:6px 10px;vertical-align:middle;}
           <select class="fsel" id="fStatus" onchange="renderCliTable()"><option value="">Todos Status</option><option value="ok">OK</option><option value="pendente">Pendente</option></select>
           <select class="fsel" id="fTipo" onchange="renderCliTable()"><option value="">Todos Tipos</option><option value="GF">Globo Fiber</option><option value="BD PF">Brasil Digital PF</option><option value="BD PJ">Brasil Digital PJ</option><option value="GOV">GOV</option></select>
           <button class="btn btn-green btn-sm" onclick="exportCSV()"><i class="fas fa-file-csv"></i> CSV</button>
+          <button class="btn btn-outline btn-sm" onclick="exportXLSX()" style="border-color:#1a73e8;color:#1a73e8;"><i class="fas fa-table"></i> Planilha</button>
         </div>
       </div>
       <div class="tbl-wrap">
@@ -481,7 +495,9 @@ tbody td{padding:6px 10px;vertical-align:middle;}
           <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--orange);margin-right:3px;animation:pulseDot 1.8s infinite;"></span>Em And.</span>
         </div>
         <button class="btn btn-outline btn-sm" id="btnSatellite" onclick="toggleSatellite()"><i class="fas fa-satellite"></i> Satélite</button>
-        <button class="btn btn-outline btn-sm" onclick="startPolyDraw()" id="btnDrawPoly"><i class="fas fa-draw-polygon"></i> Nova Área</button>
+        <button class="btn btn-outline btn-sm" id="btnLayerPoly" onclick="toggleMapLayer('polygons')" title="Mostrar/ocultar polígonos"><i class="fas fa-draw-polygon"></i> Áreas</button>
+        <button class="btn btn-outline btn-sm" id="btnLayerCTO" onclick="toggleMapLayer('ctos')" title="Mostrar/ocultar CTOs"><i class="fas fa-server"></i> CTOs</button>
+        <button class="btn btn-outline btn-sm" onclick="startPolyDraw()" id="btnDrawPoly"><i class="fas fa-vector-square"></i> Nova Área</button>
         <button class="btn btn-outline btn-sm" onclick="openAddCTOModal()"><i class="fas fa-plus"></i> Nova CTO</button>
       </div>
       <!-- Draw mode hint bar -->
@@ -650,8 +666,11 @@ tbody td{padding:6px 10px;vertical-align:middle;}
     <div class="field"><label>Nome *</label><input id="pop_nome" type="text" placeholder="Ex: Castanheira"></div>
     <div class="field"><label>Descrição</label><input id="pop_desc" type="text" placeholder="Ex: Bairro Castanheira, zona norte"></div>
     <div class="field"><label>Status</label><select id="pop_status"><option value="em-andamento">Em Andamento</option><option value="concluido">Concluído</option></select></div>
+    <div id="addPopGrupoInfo" style="display:none;background:var(--blue-l);border-radius:var(--r-sm);padding:7px 10px;font-size:10.5px;color:var(--blue);margin-bottom:2px;">
+      <i class="fas fa-folder-open"></i> Será adicionada ao projeto: <b id="addPopGrupoName">—</b>
+    </div>
     <div style="background:var(--blue-l);border-radius:var(--r-sm);padding:7px 10px;font-size:10.5px;color:var(--blue);">
-      <b>Área de atuação:</b> Após criar, vá até o <b>Mapa</b> e use o botão <b>Desenhar Área</b> para delimitar a região visualmente no mapa. O polígono ficará laranja (em andamento) ou verde (concluído) sobre o mapa.
+      <b>Área de atuação:</b> Após criar, vá ao <b>Mapa</b> e use <b>Desenhar Área</b> para delimitar a região.
     </div>
   </div>
   <div class="modal-foot">
@@ -756,7 +775,15 @@ const getCTON=id=>{const c=getCTO(id);return c?c.nome:'S/CTO';};
 const byCTO=cid=>DB.clientes.filter(c=>c.ctoId===cid);
 const byRamal=rid=>DB.clientes.filter(c=>c.ramalId===rid);
 const byPOP=pid=>DB.clientes.filter(c=>c.popId===pid);
-function getStatus(c){if(!c.lacre&&!c.contrato)return{key:'pendente',cls:'b-pend',txt:'Pendente'};if(!c.lacre)return{key:'pendente',cls:'b-pend',txt:'Sem Lacre'};if(!c.contrato)return{key:'pendente',cls:'b-pend',txt:'Sem Contrato'};return{key:'ok',cls:'b-ok',txt:'OK'};}
+function getStatus(c){
+  // GF: sempre OK (sem requisito de lacre/contrato)
+  if((c.tipo||'BD PF')==='GF')return{key:'ok',cls:'b-ok',txt:'OK'};
+  // Pendente = falta lacre OU contrato — sinal é apenas informativo
+  if(!c.lacre&&!c.contrato)return{key:'pendente',cls:'b-pend',txt:'Pendente'};
+  if(!c.lacre)return{key:'pendente',cls:'b-pend',txt:'Sem Lacre'};
+  if(!c.contrato)return{key:'pendente',cls:'b-pend',txt:'Sem Contrato'};
+  return{key:'ok',cls:'b-ok',txt:'OK'};
+}
 function tipoBadge(t){if(!t)return 'b-bd';if(t==='GOV')return 'b-gov';if(t==='GF')return 'b-gf';if(t.includes('PJ'))return 'b-pj';return 'b-bd';}
 function tipoLabel(t){if(t==='GF')return'GF';if(t==='GOV')return'GOV';if(t==='BD PJ')return'BD PJ';return'BD PF';}
 function sigCls(v){if(v==null)return'';return v>=-18?'sig-ok':v>=-22?'sig-mid':'sig-bad';}
@@ -766,6 +793,7 @@ function pHex(pct){return pct>=80?'#0ea96b':pct>=50?'#d97706':'#dc2626';}
 
 /* ── theme ── */
 let dark=false;
+let overviewPopFilter='';
 function toggleTheme(){dark=!dark;document.documentElement.setAttribute('data-theme',dark?'dark':'light');document.getElementById('tsw').classList.toggle('on',dark);document.getElementById('tswTh').innerHTML=dark?'<i class="fas fa-moon"></i>':'<i class="fas fa-sun"></i>';rebuildCharts();refreshMap();}
 
 /* ── routing ── */
@@ -780,7 +808,23 @@ function goPage(name){
   if(name==='ramais'){if(!activePOPRamais&&DB.pops.length)activePOPRamais=DB.pops[0].id;buildRamaisPage();}
   if(name==='clientes')renderCliTable();
   if(name==='alertas')buildAlertasPage();
-  if(name==='mapa')setTimeout(()=>{initMap();refreshMap();buildMapSb();},120);
+  if(name==='mapa'){
+    if(!map){
+      // Pequeno delay para garantir que o DOM está visível antes do Leaflet medir
+      requestAnimationFrame(()=>{
+        initMap();
+        if(map)map.invalidateSize();
+        refreshMap();
+        buildMapSb();
+      });
+    } else {
+      requestAnimationFrame(()=>{
+        map.invalidateSize();
+        refreshMap();
+        buildMapSb();
+      });
+    }
+  }
 }
 
 /* ── sidebar tree ── */
@@ -886,7 +930,15 @@ function renderPOPInTree(p,indented){
 }
 
 let addPOPinGrupo=null;
-function openAddPOPInGrupo(gid){addPOPinGrupo=gid;openModal('ovAddPOP');}
+function openAddPOPInGrupo(gid){
+  addPOPinGrupo=gid;
+  const g=DB.grupos.find(x=>x.id===gid);
+  const infoEl=document.getElementById('addPopGrupoInfo');
+  const nameEl=document.getElementById('addPopGrupoName');
+  if(infoEl&&nameEl&&g){infoEl.style.display='block';nameEl.textContent=g.nome;}
+  else if(infoEl){infoEl.style.display='none';}
+  openModal('ovAddPOP');
+}
 
 
 function togglePop(t,c){document.getElementById(t)?.classList.toggle('open');document.getElementById(c)?.classList.toggle('open');}
@@ -931,9 +983,32 @@ function buildKPIs(){
 let charts={};
 const TIPO_COLORS={'BD PF':'#0ea96b','BD PJ':'#b91c1c','GF':'#1a56e8','GOV':'#7c3aed'};
 const TIPO_LABELS={'BD PF':'Brasil Digital PF','BD PJ':'Brasil Digital PJ','GF':'Globo Fiber','GOV':'GOV'};
+function setOverviewFilter(v){
+  overviewPopFilter=v;
+  const badge=document.getElementById('overviewFilterBadge');
+  if(v){
+    const pop=DB.pops.find(p=>p.id===v);
+    badge.textContent=pop?pop.nome:'';
+    badge.style.display='';
+  } else {
+    badge.style.display='none';
+  }
+  rebuildCharts();
+}
+function populateOverviewFilter(){
+  const sel=document.getElementById('overviewPopFilter');
+  if(!sel)return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">Todas as localizações</option>'+DB.pops.map(p=>`<option value="${p.id}"${p.id===cur?' selected':''}>${p.nome}</option>`).join('');
+}
 function rebuildCharts(){
   Object.values(charts).forEach(c=>{try{c.destroy();}catch(_){}});charts={};
-  const all=DB.clientes;if(!all.length)return;
+  populateOverviewFilter();
+  // Clientes filtrados pelo select de localização
+  const allClientes=DB.clientes;
+  const filteredClientes=overviewPopFilter?allClientes.filter(c=>c.popId===overviewPopFilter):allClientes;
+  const all=filteredClientes;
+  if(!allClientes.length)return;
 
   // 1 ── PIZZA — Tipo de Cliente ──────────────────────────────────────
   const tipos={};
@@ -976,7 +1051,8 @@ function rebuildCharts(){
   // 2 ── DOCUMENTADO / LOCALIZAÇÃO ────────────────────────────────────
   const popDocEl=document.getElementById('popDocChart');
   if(popDocEl){
-    popDocEl.innerHTML=DB.pops.map(p=>{
+    const filteredPops=overviewPopFilter?DB.pops.filter(p=>p.id===overviewPopFilter):DB.pops;
+    popDocEl.innerHTML=filteredPops.map(p=>{
       const pp=calcProg(byPOP(p.id));
       const col=pp.pct>=80?'#0ea96b':pp.pct>=50?'#d97706':'#dc2626';
       const chip=p.status==='concluido'
@@ -1003,7 +1079,7 @@ function rebuildCharts(){
   // 3 ── OK vs PENDENTE / HABILITAÇÃO ─────────────────────────────────
   const ramalEl=document.getElementById('ramalChart');
   if(ramalEl){
-    const rSorted=[...DB.ramais].sort((a,b)=>byRamal(b.id).length-byRamal(a.id).length);
+    const filteredRamais=overviewPopFilter?DB.ramais.filter(r=>r.popId===overviewPopFilter):DB.ramais;    const rSorted=[...filteredRamais].sort((a,b)=>byRamal(b.id).length-byRamal(a.id).length);
     ramalEl.innerHTML=rSorted.map(r=>{
       const pp=calcProg(byRamal(r.id));
       const tot=Math.max(1,pp.total);
@@ -1031,11 +1107,7 @@ function rebuildCharts(){
   const ctoEl=document.getElementById('ctoChart');
   const ctoSubEl=document.getElementById('ctoChartSub');
   if(ctoEl){
-    const ctoSorted=[...DB.ctos]
-      .map(c=>({c,pp:calcProg(byCTO(c.id))}))
-      .filter(x=>x.pp.total>0)
-      .sort((a,b)=>b.pp.total-a.pp.total)
-      .slice(0,20);
+    const ctosToShow=overviewPopFilter?sortedAllCTOs().filter(c=>c.popId===overviewPopFilter):sortedAllCTOs();    const ctoSorted=ctosToShow.map(c=>({c,pp:calcProg(byCTO(c.id))})).filter(x=>x.pp.total>0).slice(0,20);
     if(ctoSubEl) ctoSubEl.textContent='top '+ctoSorted.length+' de '+DB.ctos.length+' CTOs';
     ctoEl.innerHTML=ctoSorted.map(({c,pp})=>{
       const col=pp.pct>=80?'#0ea96b':pp.pct>=50?'#d97706':'#dc2626';
@@ -1064,7 +1136,7 @@ function rebuildCharts(){
       +'<th style="text-align:right;padding:5px 8px;font-size:9px;font-weight:700;color:var(--txt3);text-transform:uppercase;">Total</th>'
       +'</tr></thead><tbody>';
 
-    DB.pops.forEach((p,i)=>{
+    const tipoLocPops=overviewPopFilter?DB.pops.filter(p=>p.id===overviewPopFilter):DB.pops;    tipoLocPops.forEach((p,i)=>{
       const cls=byPOP(p.id);
       const bg=i%2===0?'background:var(--bg2);':'';
       html+='<tr style="'+bg+'">'
@@ -1094,6 +1166,26 @@ function rebuildCharts(){
 /* ── RAMAIS PAGE ── */
 let activeRamal=null;
 let activePOPRamais=null;
+function sortedRamais(popId){
+  return [...DB.ramais.filter(r=>r.popId===popId)].sort((a,b)=>(parseInt(a.nome)||0)-(parseInt(b.nome)||0));
+}
+function sortedCTOs(ramalId){
+  return [...DB.ctos.filter(c=>c.ramalId===ramalId)].sort((a,b)=>{
+    const parse=s=>s.replace(/[^0-9.]/g,'').split('.').map(Number);
+    const ap=parse(a.nome),bp=parse(b.nome);
+    for(let i=0;i<Math.max(ap.length,bp.length);i++){const d=(ap[i]||0)-(bp[i]||0);if(d!==0)return d;}
+    return 0;
+  });
+}
+function sortedAllCTOs(){
+  return [...DB.ctos].sort((a,b)=>{
+    const parse=s=>s.replace(/[^0-9.]/g,'').split('.').map(Number);
+    const ap=parse(a.nome),bp=parse(b.nome);
+    for(let i=0;i<Math.max(ap.length,bp.length);i++){const d=(ap[i]||0)-(bp[i]||0);if(d!==0)return d;}
+    return 0;
+  });
+}
+
 function buildRamaisPage(){
   // POP tabs
   if(!activePOPRamais&&DB.pops.length) activePOPRamais=DB.pops[0].id;
@@ -1125,7 +1217,7 @@ function buildRamaisPage(){
   });
   popTabs.innerHTML=tabHtml;
   // Ramal selector for current POP
-  const ramaisOfPOP=DB.ramais.filter(r=>r.popId===activePOPRamais);
+  const ramaisOfPOP=sortedRamais(activePOPRamais);
   if(!activeRamal||!ramaisOfPOP.find(r=>r.id===activeRamal)){
     activeRamal=ramaisOfPOP[0]?.id||null;
   }
@@ -1163,7 +1255,7 @@ function renderRamalContent(){
     </div>`;
     return;
   }
-  const r=getRamal(activeRamal),ctos=DB.ctos.filter(c=>c.ramalId===activeRamal);
+  const r=getRamal(activeRamal),ctos=sortedCTOs(activeRamal);
   const rp=calcProg(byRamal(activeRamal)),pop=getPOP(r.popId);
   wrap.innerHTML=`<div style="background:var(--surface);border-radius:var(--r);padding:11px 15px;box-shadow:var(--sh-sm);border:1px solid var(--border);margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
     <div style="flex:1;min-width:140px;">
@@ -1182,9 +1274,12 @@ function renderCTOCard(cto){
   const avg=vs.length?(vs.reduce((a,b)=>a+b,0)/vs.length).toFixed(1):null;
   const sigC=avg===null?'var(--txt3)':parseFloat(avg)<=-20?'var(--red)':parseFloat(avg)<=-18?'var(--yellow)':'var(--green)';
   const comObs=cls.filter(c=>c.obs).length;
+  const gfN=cls.filter(c=>(c.tipo||'BD PF')==='GF').length;
+  const gfBox=gfN>0?`<div style="background:#e8effd;border:1px solid #b8d0f8;border-radius:5px;padding:3px 9px;margin:4px 0 2px;font-size:9.5px;display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#1a56e8;flex-shrink:0;display:inline-block;"></span><b style="color:#1a56e8;">${gfN}</b><span style="color:#4a5578;"> Globo Fiber</span></div>`:'';
   return`<div class="cto-card" onclick="openCTOModal('${cto.id}')">
     <div class="cto-top"><div><div class="cto-name">${cto.nome}</div><div class="cto-meta">${cls.length} cli · cap.${cto.capacidade}${cto.lat?' · 📍':''}</div></div><div class="cto-icon"><i class="fas fa-server"></i></div></div>
     <div class="cto-prog">
+      ${gfBox}
       <div class="prog-hdr"><span class="prog-lbl">Progresso</span><span class="prog-pct" style="color:${pColor(prog.pct)}">${prog.pct}%</span></div>
       <div class="prog-bar"><div class="prog-fill" style="width:${prog.pct}%;background:${pColor(prog.pct)}"></div></div>
       <div class="prog-tags"><span class="badge b-ok">${prog.ok} OK</span>${prog.pend?`<span class="badge b-pend">${prog.pend} Pend</span>`:''}${comObs?`<span class="badge b-obs">${comObs} Obs</span>`:''}</div>
@@ -1199,21 +1294,193 @@ function renderCTOCard(cto){
 
 /* ── CTO MODAL ── */
 let activeCTO=null;
+/* ══ CTO SIGNAL ESTIMATION ENGINE ══════════════════════════════════════ */
+function calcCTOSignal(ctoId){
+  const cls = byCTO(ctoId);
+  // Somente clientes com AMBOS os sinais medidos
+  const withBoth = cls.filter(c =>
+    c.sinalCliente != null && c.sinalCTO != null
+  );
+  if(!withBoth.length) return null;
+
+  // STEP 1+2: calcular drop_loss e classificar
+  const withDrop = withBoth.map(c => {
+    const drop = c.sinalCliente - c.sinalCTO; // drop_loss = cliente - OLT
+    let cls_drop;
+    if     (drop < 2)  cls_drop = 'critical';  // < 2 dB (abaixo do normal)
+    else if(drop <= 4) cls_drop = 'normal';
+    else if(drop <= 5) cls_drop = 'warning';
+    else if(drop <= 6) cls_drop = 'high';
+    else               cls_drop = 'critical';
+    return { c, drop, cls_drop };
+  });
+
+  // STEP 3: filtro de outliers (1 < drop <= 6)
+  const valid   = withDrop.filter(d => d.drop >= 1 && d.drop <= 6);
+  const outliers= withDrop.filter(d => d.drop <  1 || d.drop >  6);
+
+  if(!valid.length) return { noValid: true, total: withBoth.length, outliers, withDrop };
+
+  // STEP 4: médias
+  const avgDrop = valid.reduce((s,d)=>s+d.drop, 0) / valid.length;
+  const avgOLT  = valid.reduce((s,d)=>s+d.c.sinalCTO, 0) / valid.length;
+
+  // STEP 5: estimativa CTO
+  const ctoPredicted = avgOLT + avgDrop;
+
+  // STEP 6: variação
+  const drops = valid.map(d=>d.drop);
+  const worstDrop = Math.max(...drops);
+  const bestDrop  = Math.min(...drops);
+  const variation = worstDrop - bestDrop;
+  const highVariation = variation > 4;
+
+  return {
+    ctoPredicted: +ctoPredicted.toFixed(2),
+    avgDrop:      +avgDrop.toFixed(2),
+    avgOLT:       +avgOLT.toFixed(2),
+    worstDrop:    +worstDrop.toFixed(2),
+    bestDrop:     +bestDrop.toFixed(2),
+    variation:    +variation.toFixed(2),
+    highVariation,
+    validCount:   valid.length,
+    totalCount:   withBoth.length,
+    valid, outliers, withDrop,
+    noValid: false
+  };
+}
+
+function dropLossColor(cls_drop){
+  return cls_drop==='normal'?'var(--green)':cls_drop==='warning'?'var(--yellow)':cls_drop==='high'?'var(--orange)':'var(--red)';
+}
+function dropLossLabel(cls_drop){
+  return cls_drop==='normal'?'Normal':cls_drop==='warning'?'Atenção':cls_drop==='high'?'Alta perda':'Crítica';
+}
+function sigColorDBm(v){
+  if(v==null)return'var(--txt3)';
+  if(v>=-18)return'var(--green)';
+  if(v>=-22)return'var(--yellow)';
+  return'var(--red)';
+}
+
+/* renderiza painel de sinal CTO dentro do modal */
+function renderCTOSignalPanel(ctoId){
+  const r = calcCTOSignal(ctoId);
+  if(!r){
+    return`<div style="background:var(--bg2);border-radius:8px;padding:12px 14px;font-size:10.5px;color:var(--txt3);text-align:center;">
+      <i class="fas fa-satellite-dish" style="font-size:20px;margin-bottom:6px;display:block;"></i>
+      Nenhum cliente com sinal registrado nesta CTO.
+    </div>`;
+  }
+  if(r.noValid){
+    return`<div style="background:var(--red-l);border:1px solid var(--red);border-radius:8px;padding:12px 14px;font-size:10.5px;color:var(--red);">
+      <b><i class="fas fa-exclamation-triangle"></i> Sem dados válidos</b><br>
+      ${r.total} cliente(s) com sinal registrado, mas todos foram excluídos como outliers (drop_loss fora do intervalo 1–6 dB).
+    </div>`;
+  }
+
+  const sc = sigColorDBm(r.ctoPredicted);
+  const sigIcon = r.ctoPredicted>=-18?'fa-signal':r.ctoPredicted>=-22?'fa-signal':'fa-exclamation-triangle';
+
+  // Tabela de clientes com drop_loss
+  const rows = r.withDrop.map(d=>{
+    const isOut = r.outliers.some(o=>o.c.id===d.c.id);
+    const dc = dropLossColor(d.cls_drop);
+    return`<tr style="${isOut?'opacity:0.45;text-decoration:line-through;':''}">
+      <td style="font-size:9px;font-family:var(--mono);color:var(--txt2);">${d.c.mac}</td>
+      <td style="font-size:9px;text-align:right;color:${sigColorDBm(d.c.sinalCliente)};">${d.c.sinalCliente!=null?d.c.sinalCliente.toFixed(2):'-'}</td>
+      <td style="font-size:9px;text-align:right;color:${sigColorDBm(d.c.sinalCTO)};">${d.c.sinalCTO!=null?d.c.sinalCTO.toFixed(2):'-'}</td>
+      <td style="font-size:9px;text-align:right;font-weight:700;color:${dc};">${d.drop.toFixed(2)}</td>
+      <td style="font-size:8.5px;text-align:center;"><span style="background:${dc};color:#fff;border-radius:3px;padding:1px 5px;">${isOut?'Outlier':dropLossLabel(d.cls_drop)}</span></td>
+    </tr>`;
+  }).join('');
+
+  return`
+  <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:4px;">
+    <!-- Header estimativa -->
+    <div style="background:linear-gradient(135deg,#0d1424 0%,#1a2540 100%);padding:12px 16px;display:flex;align-items:center;gap:12px;">
+      <div style="background:rgba(255,255,255,.08);border-radius:8px;width:42px;height:42px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <i class="fas ${sigIcon}" style="font-size:18px;color:${sc};"></i>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:10px;color:rgba(255,255,255,.5);margin-bottom:2px;">Sinal Estimado na CTO</div>
+        <div style="font-size:22px;font-weight:900;color:${sc};font-family:'Outfit',sans-serif;line-height:1;">${r.ctoPredicted} <span style="font-size:12px;font-weight:600;opacity:.8;">dBm</span></div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:9px;color:rgba(255,255,255,.4);">Clientes válidos</div>
+        <div style="font-size:16px;font-weight:800;color:#fff;">${r.validCount}<span style="font-size:10px;color:rgba(255,255,255,.4);">/${r.totalCount}</span></div>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--border);">
+      ${[
+        {lbl:'Drop Médio',   val:r.avgDrop+' dB',   c:dropLossColor(r.avgDrop<=4?'normal':r.avgDrop<=5?'warning':r.avgDrop<=6?'high':'critical')},
+        {lbl:'OLT Médio',    val:r.avgOLT+' dBm',   c:sigColorDBm(r.avgOLT)},
+        {lbl:'Variação',     val:r.variation+' dB',  c:r.highVariation?'var(--red)':'var(--green)'},
+      ].map(k=>`<div style="padding:8px 10px;border-right:1px solid var(--border);last-child:{border:none}">
+        <div style="font-size:8.5px;color:var(--txt3);margin-bottom:2px;">${k.lbl}</div>
+        <div style="font-size:13px;font-weight:800;color:${k.c};">${k.val}</div>
+      </div>`).join('')}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);">
+      ${[
+        {lbl:'Pior Drop',    val:r.worstDrop+' dB', c:'var(--red)'},
+        {lbl:'Melhor Drop',  val:r.bestDrop+' dB',  c:'var(--green)'},
+      ].map(k=>`<div style="padding:8px 10px;border-right:1px solid var(--border);">
+        <div style="font-size:8.5px;color:var(--txt3);margin-bottom:2px;">${k.lbl}</div>
+        <div style="font-size:13px;font-weight:800;color:${k.c};">${k.val}</div>
+      </div>`).join('')}
+    </div>
+
+    ${r.highVariation?`
+    <div style="background:#fef3c7;border-top:1px solid #f59e0b;padding:8px 12px;display:flex;gap:7px;align-items:flex-start;">
+      <i class="fas fa-exclamation-triangle" style="color:#d97706;margin-top:1px;font-size:12px;flex-shrink:0;"></i>
+      <div style="font-size:10px;color:#92400e;"><b>Alta variação de drop detectada (${r.variation} dB).</b><br>Possível diferença no comprimento do ramal, conector sujo, curvatura de fibra ou problema de fusão.</div>
+    </div>`:''}
+
+    ${r.outliers.length?`
+    <div style="background:var(--bg2);border-top:1px solid var(--border);padding:6px 12px;">
+      <div style="font-size:9px;color:var(--txt3);"><i class="fas fa-filter"></i> ${r.outliers.length} cliente(s) excluído(s) como outlier (drop_loss fora de 1–6 dB): ${r.outliers.map(o=>o.c.mac).join(', ')}</div>
+    </div>`:''}
+
+    <!-- Tabela de drops -->
+    <div style="border-top:1px solid var(--border);overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="background:var(--bg2);">
+            <th style="padding:5px 8px;font-size:8.5px;color:var(--txt2);text-align:left;font-weight:700;">MAC</th>
+            <th style="padding:5px 8px;font-size:8.5px;color:var(--txt2);text-align:right;font-weight:700;">ONU (dBm)</th>
+            <th style="padding:5px 8px;font-size:8.5px;color:var(--txt2);text-align:right;font-weight:700;">OLT (dBm)</th>
+            <th style="padding:5px 8px;font-size:8.5px;color:var(--txt2);text-align:right;font-weight:700;">Drop (dB)</th>
+            <th style="padding:5px 8px;font-size:8.5px;color:var(--txt2);text-align:center;font-weight:700;">Classe</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+/* ══ END CTO SIGNAL ENGINE ══════════════════════════════════════════════ */
+
 function openCTOModal(ctoId){
   activeCTO=ctoId;
   const cto=getCTO(ctoId),r=getRamal(cto?.ramalId),pop=getPOP(r?.popId);
   const cls=byCTO(ctoId),prog=calcProg(cls);
-  const vs=cls.filter(c=>c.sinalCliente!=null).map(c=>c.sinalCliente);
-  const avg=vs.length?(vs.reduce((a,b)=>a+b,0)/vs.length).toFixed(2)+' dBm':'N/A';
+  const vsCTO=cls.filter(c=>c.sinalCTO!=null).map(c=>c.sinalCTO);
+  const avg=vsCTO.length?(vsCTO.reduce((a,b)=>a+b,0)/vsCTO.length).toFixed(2)+' dBm':'N/A';
   document.getElementById('mCTOName').textContent=cto.nome;
   document.getElementById('mCTOSub').textContent=`${pop?pop.nome+' › ':''} R.${r?.nome||'—'} · ${cls.length} clientes`;
   document.getElementById('mCTOKpis').innerHTML=[
     {val:cls.length,lbl:'Clientes',c:'var(--blue)'},{val:prog.pct+'%',lbl:'OK',c:pColor(prog.pct)},
-    {val:avg,lbl:'Sinal Médio',c:'var(--txt)'},{val:cls.filter(c=>c.obs).length,lbl:'Com Obs.',c:'var(--orange)'},
+    {val:avg,lbl:'Sinal Médio CTO',c:'var(--txt)'},{val:cls.filter(c=>c.obs).length,lbl:'Com Obs.',c:'var(--orange)'},
   ].map(k=>`<div class="mkpi"><div class="mkpi-val" style="color:${k.c}">${k.val}</div><div class="mkpi-lbl">${k.lbl}</div></div>`).join('');
   document.getElementById('mCTOPct').textContent=prog.pct+'%';
   const bar=document.getElementById('mCTOBar');bar.style.width=prog.pct+'%';bar.style.background=pColor(prog.pct);
   document.getElementById('mCTOClients').innerHTML=cls.length?cls.map(renderCliCard).join(''):'<div class="empty-state"><i class="fas fa-user-plus"></i><p>Sem clientes nesta CTO.</p></div>';
+  // Painel de análise de sinal
+  const sigPanel=document.getElementById('mCTOSignalPanel');
+  if(sigPanel)sigPanel.innerHTML=renderCTOSignalPanel(ctoId);
   openModal('ovCTO');
 }
 function renderCliCard(c){
@@ -1267,14 +1534,19 @@ function renderCliTable(){
   const pb=document.getElementById('cliPg');pb.innerHTML='';
   for(let p=1;p<=pgs;p++){const b=document.createElement('button');b.className='pg-btn'+(p===cliPage?' active':'');b.textContent=p;b.onclick=(pp=>()=>{cliPage=pp;renderCliTable();})(p);pb.appendChild(b);}
   const fPEl=document.getElementById('fPOP'),curP=fPEl.value;
-  fPEl.innerHTML='<option value="">Todas Localiz.</option>'+DB.pops.map(p=>`<option value="${p.id}"${p.id===curP?' selected':''}>${p.nome}</option>`).join('');
+  if(!fPEl.options.length||fPEl.options[1]?.value!==DB.pops[0]?.id){
+    fPEl.innerHTML='<option value="">Todas Localiz.</option>'+DB.pops.map(p=>`<option value="${p.id}"${p.id===curP?' selected':''}>${p.nome}</option>`).join('');
+  } else { fPEl.value=curP; }
   const fCEl=document.getElementById('fCTO'),curC=fCEl.value;
-  fCEl.innerHTML='<option value="">Todas CTOs</option>'+DB.ctos.map(c=>`<option value="${c.id}"${c.id===curC?' selected':''}>${c.nome}</option>`).join('');
+  // Only show CTOs matching selected POP
+  const ctoList=curP?sortedAllCTOs().filter(c=>c.popId===curP):sortedAllCTOs();
+  fCEl.innerHTML='<option value="">Todas CTOs</option>'+ctoList.map(c=>`<option value="${c.id}"${c.id===curC?' selected':''}>${c.nome}</option>`).join('');
 }
 
 /* ── ALERTAS ── */
 function buildAlertasPage(){
-  const semL=DB.clientes.filter(c=>!c.lacre),semC=DB.clientes.filter(c=>!c.contrato),comO=DB.clientes.filter(c=>c.obs);
+  const isGF=c=>(c.tipo||'BD PF')==='GF';
+  const semL=DB.clientes.filter(c=>!c.lacre&&!isGF(c)),semC=DB.clientes.filter(c=>!c.contrato&&!isGF(c)),comO=DB.clientes.filter(c=>c.obs);
   document.getElementById('aLacre').textContent=semL.length;
   document.getElementById('aCont').textContent=semC.length;
   document.getElementById('aObs').textContent=comO.length;
@@ -1294,6 +1566,8 @@ function buildAlertasPage(){
 
 /* ══ MAP ══ */
 let map=null,mapMarkers=[],polyLayers=[],activeMapFilter='all';
+let mapLayers={polygons:true,ctos:true,labels:true};
+let mapPopVis={};// {popId: bool}
 let drawMode=false,drawPoints=[],drawPolyline=null,drawTempPoly=null,lastMapClick=null;
 let polyDrawForPop=null;
 let editPolyMode=false,editPolyPOPId=null,editPolyHandles=[],editPolyLayer=null,editPolyOriginal=[];
@@ -1304,18 +1578,28 @@ function initMap(){
   if(map)return;
   map=L.map('leafletMap').setView([-8.7290,-63.8560],15);
   tileStreet=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19});
-  tileSat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'© Esri World Imagery',maxZoom:19});
+  tileSat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP',maxZoom:19});
   tileStreet.addTo(map);
+  let _lastClickTime=0;
   map.on('click',e=>{
     lastMapClick=e.latlng;
-    if(drawMode){addDrawPoint(e.latlng);}
-    else if(editPolyMode){
-      // only insert midpoint if not right after a handle drag
+    if(drawMode){
+      const now=Date.now();
+      if(now-_lastClickTime<350){return;}// ignore rapid double-clicks
+      _lastClickTime=now;
+      addDrawPoint(e.latlng);
+    } else if(editPolyMode){
       if(!_handleDragJustEnded){addMidpointToEdit(e.latlng);}
       _handleDragJustEnded=false;
     }
   });
-  map.on('dblclick',e=>{if(drawMode){e.originalEvent.preventDefault();finishPolyDraw();}});
+  map.on('dblclick',e=>{
+    if(drawMode){e.originalEvent.preventDefault();e.originalEvent.stopPropagation();finishPolyDraw();}
+  });
+  // Marcar que usuário interagiu — não re-centralizar no próximo refreshMap
+  map.on('dragend zoomend',()=>{map._userInteracted=true;});
+  // Ajustar zoom para cobrir todas as CTOs na primeira abertura
+  map._initialFitDone=false;
 }
 
 function toggleSatellite(){
@@ -1326,34 +1610,47 @@ function toggleSatellite(){
   if(btn){btn.style.background=isSatellite?'var(--blue)':'';btn.style.color=isSatellite?'#fff':'';btn.style.borderColor=isSatellite?'var(--blue)':'';}
 }
 
+function popVisible(p){
+  // check filter bar
+  const filterOk=activeMapFilter==='all'||activeMapFilter===p.id
+    ||(activeMapFilter==='concluido'&&p.status==='concluido')
+    ||(activeMapFilter==='em-andamento'&&p.status!=='concluido');
+  // check per-pop toggle (default true)
+  const togOk=mapPopVis[p.id]!==false;
+  return filterOk&&togOk;
+}
 function refreshMap(){
   if(!map||editPolyMode)return;
   mapMarkers.forEach(m=>map.removeLayer(m));mapMarkers=[];
   polyLayers.forEach(l=>map.removeLayer(l));polyLayers=[];
 
   DB.pops.forEach(p=>{
+    if(!mapLayers.polygons)return;// camada polígonos desativada
     if(!p.polygon||p.polygon.length<3)return;
-    const show=activeMapFilter==='all'||activeMapFilter===p.id
-      ||(activeMapFilter==='concluido'&&p.status==='concluido')
-      ||(activeMapFilter==='em-andamento'&&p.status!=='concluido');
+    const show=popVisible(p);
     if(!show)return;
     const isCon=p.status==='concluido';
-    const col=isCon?'#0ea96b':'#e8650a';
+    const col=isCon?'#0ea96b':'#ff6b00';
     const poly=L.polygon(p.polygon,{
-      color:col,weight:2.5,opacity:.9,fillColor:col,
-      fillOpacity:isCon?0.16:0.22,
-      dashArray:isCon?null:'7 4',
+      color:col,weight:3.5,opacity:1,fillColor:col,
+      fillOpacity:isCon?0.28:0.32,
+      dashArray:isCon?null:'8 4',
       className:isCon?'pop-area-poly-ok':'pop-area-poly-and'
     }).addTo(map);
     poly.bindTooltip('<b>'+p.nome+'</b> '+(isCon?'· ✓ Concluído':'· Em Andamento'),{sticky:true,className:'cto-label'});
     polyLayers.push(poly);
   });
 
+  if(!mapLayers.ctos){// CTOs desativadas
+    if(DB.ctos.filter(c=>c.lat&&c.lng).length>1)map.fitBounds?null:null;
+    return;
+  }
   const withCoords=DB.ctos.filter(c=>c.lat&&c.lng);
-  const filtered=activeMapFilter==='all'?withCoords
+  const preFiltered=activeMapFilter==='all'?withCoords
     :activeMapFilter==='concluido'?withCoords.filter(c=>getPOP(c.popId)?.status==='concluido')
     :activeMapFilter==='em-andamento'?withCoords.filter(c=>getPOP(c.popId)?.status!=='concluido')
     :withCoords.filter(c=>c.popId===activeMapFilter);
+  const filtered=preFiltered.filter(c=>{const p=getPOP(c.popId);return p?popVisible(p):true;});
 
   filtered.forEach(cto=>{
     const pop=getPOP(cto.popId)||{status:'em-andamento'};
@@ -1373,8 +1670,8 @@ function refreshMap(){
       +'</div>',
       className:'',iconSize:[32,52],iconAnchor:[16,32],popupAnchor:[0,-34]
     });
-    const vs=cls.filter(c=>c.sinalCliente!=null).map(c=>c.sinalCliente);
-    const avgSig=vs.length?(vs.reduce((a,b)=>a+b,0)/vs.length).toFixed(2)+' dBm':'N/A';
+    const vsCTOmap=cls.filter(c=>c.sinalCTO!=null).map(c=>c.sinalCTO);
+    const avgSig=vsCTOmap.length?(vsCTOmap.reduce((a,b)=>a+b,0)/vsCTOmap.length).toFixed(2)+' dBm':'N/A';
     const comObs=cls.filter(c=>c.obs).length;
     const ph='<div style="font-family:\'Outfit\',sans-serif;min-width:190px;">'
       +'<div style="font-size:12px;font-weight:800;color:#0d1424;margin-bottom:2px;">'+cto.nome+'</div>'
@@ -1382,15 +1679,22 @@ function refreshMap(){
       +'<div style="display:flex;justify-content:space-between;font-size:9.5px;padding:2px 0;border-bottom:1px solid #eee;"><span style="color:#4a5578;">Clientes</span><span style="font-weight:700;color:#0d1424;">'+cls.length+'/'+cto.capacidade+'</span></div>'
       +'<div style="display:flex;justify-content:space-between;font-size:9.5px;padding:2px 0;border-bottom:1px solid #eee;"><span style="color:#4a5578;">OK</span><span style="font-weight:700;color:#0ea96b;">'+prog.ok+'</span></div>'
       +'<div style="display:flex;justify-content:space-between;font-size:9.5px;padding:2px 0;border-bottom:1px solid #eee;"><span style="color:#4a5578;">Pendente</span><span style="font-weight:700;color:#d97706;">'+prog.pend+'</span></div>'
-      +'<div style="display:flex;justify-content:space-between;font-size:9.5px;padding:2px 0;border-bottom:1px solid #eee;"><span style="color:#4a5578;">Sinal Médio</span><span style="font-weight:700;color:#0d1424;">'+avgSig+'</span></div>'
+      +'<div style="display:flex;justify-content:space-between;font-size:9.5px;padding:2px 0;border-bottom:1px solid #eee;"><span style="color:#4a5578;">Sinal Médio CTO</span><span style="font-weight:700;color:#0d1424;">'+avgSig+'</span></div>'
       +'<div style="margin-top:7px;"><div style="height:5px;background:#e6eaf4;border-radius:3px;overflow:hidden;"><div style="width:'+prog.pct+'%;height:100%;background:'+col+';border-radius:3px;"></div></div></div>'
       +'</div>'
       +'<button onclick="window.openCTOFromMap(\''+cto.id+'\')" style="display:block;width:calc(100% + 26px);margin:-1px -13px -13px;padding:6px;background:'+col+';color:#fff;border:none;font-size:10px;font-weight:700;cursor:pointer;font-family:\'Outfit\',sans-serif;">Ver clientes →</button>';
     const marker=L.marker([cto.lat,cto.lng],{icon}).addTo(map).bindPopup(ph,{maxWidth:220,minWidth:195});
     mapMarkers.push(marker);
   });
-  if(filtered.length>1){map.fitBounds(L.latLngBounds(filtered.map(c=>[c.lat,c.lng])),{padding:[55,55]});}
-  else if(filtered.length===1){map.setView([filtered[0].lat,filtered[0].lng],16);}
+  // FitBounds apenas na primeira vez que o mapa carrega
+  if(!map._initialFitDone && filtered.length>0){
+    map._initialFitDone=true;
+    if(filtered.length>1){
+      map.fitBounds(L.latLngBounds(filtered.map(c=>[c.lat,c.lng])),{padding:[60,60]});
+    } else {
+      map.setView([filtered[0].lat,filtered[0].lng],16);
+    }
+  }
 }
 window.openCTOFromMap=id=>{map?.closePopup();setTimeout(()=>openCTOModal(id),100);};
 
@@ -1437,12 +1741,17 @@ function finishPolyDraw(){
 }
 function saveDrawnPoly(){
   const pid=document.getElementById('fp_pop').value;if(!pid)return;
-  savePolyToPop(pid,[...drawPoints]);drawPoints=[];closeModal('ovFinishPoly');cleanupDrawLines();
+  const pts=[...drawPoints];
+  drawPoints=[];closeModal('ovFinishPoly');
+  savePolyToPop(pid,pts);// savePolyToPop also calls cleanupDrawLines
 }
 function savePolyToPop(pid,pts){
   const idx=DB.pops.findIndex(p=>p.id===pid);if(idx<0)return;
-  DB.pops[idx].polygon=[...pts];saveDB();refreshMap();buildMapSb();
-  toast('Área salva para "'+DB.pops[idx].nome+'" ✓');
+  DB.pops[idx].polygon=pts.map(p=>[p[0],p[1]]);// deep copy each point
+  drawPoints=[];polyDrawForPop=null;// always reset draw state
+  cleanupDrawLines();
+  saveDB();refreshMap();buildMapSb();
+  toast('Área salva: "'+DB.pops[idx].nome+'" ('+pts.length+' pontos) ✓');
 }
 function cancelPolyDraw(){
   drawMode=false;drawPoints=[];polyDrawForPop=null;map.getContainer().style.cursor='';
@@ -1586,12 +1895,8 @@ function buildMapSb(){
     const isCon=p.status==='concluido';
     const ramais=DB.ramais.filter(r=>r.popId===p.id);
     const hasP=p.polygon&&p.polygon.length>=3;
-    cardsHtml+='<div class="pop-card">'
-      +'<div class="pop-card-hdr" onclick="togglePCBody(\'pcb_'+p.id+'\')">'
-        +'<div class="pop-ball '+(isCon?'concluido':'em-andamento')+'"></div>'
-        +'<div class="pop-card-name">'+p.nome+'</div>'
-        +'<span class="pop-card-chip '+(isCon?'chip-con':'chip-and')+'">'+(isCon?'✓ OK':'● And.')+'</span>'
-      +'</div>'
+    const popOn=mapPopVis[p.id]!==false;
+    cardsHtml+='<div class="pop-card" style="opacity:'+(popOn?'1':'0.55')+'">'      +'<div class="pop-card-hdr">'        +'<button onclick="event.stopPropagation();togglePopVis(\''+p.id+'\');" title="'+(popOn?'Ocultar':'Mostrar')+' no mapa" style="width:20px;height:20px;border-radius:4px;border:1.5px solid var(--border2);background:'+(popOn?'var(--green)':'var(--bg2)')+';cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:2px;"><i class="fas '+(popOn?'fa-eye':'fa-eye-slash')+'" style="font-size:8px;color:'+(popOn?'#fff':'var(--txt3)')+'"></i></button>'        +'<div class="pop-ball '+(isCon?'concluido':'em-andamento')+'"></div>'        +'<div class="pop-card-name" style="cursor:pointer;flex:1;" onclick="togglePCBody(\'pcb_'+p.id+'\')">'+p.nome+'</div>'        +'<span class="pop-card-chip '+(isCon?'chip-con':'chip-and')+'">'+(isCon?'✓ OK':'● And.')+'</span>'      +'</div>'
       +'<div class="pop-card-body" id="pcb_'+p.id+'">'
         +'<div class="pop-prog-row"><span style="color:var(--txt2);">Documentação</span><span style="font-weight:800;color:'+pColor(pp.pct)+'">'+pp.pct+'%</span></div>'
         +'<div class="pop-bar"><div class="pop-bar-fill" style="width:'+pp.pct+'%;background:'+pColor(pp.pct)+';"></div></div>'
@@ -1616,6 +1921,21 @@ function buildMapSb(){
 }
 function togglePCBody(id){document.getElementById(id)?.classList.toggle('open');}
 function setMapFilter(f){activeMapFilter=f;refreshMap();buildMapSb();}
+function toggleMapLayer(layer){
+  mapLayers[layer]=!mapLayers[layer];
+  const btnId=layer==='polygons'?'btnLayerPoly':'btnLayerCTO';
+  const btn=document.getElementById(btnId);
+  if(btn){
+    btn.style.background=mapLayers[layer]?'':'var(--bg2)';
+    btn.style.opacity=mapLayers[layer]?'1':'0.5';
+    btn.style.textDecoration=mapLayers[layer]?'':'line-through';
+  }
+  refreshMap();
+}
+function togglePopVis(pid){
+  mapPopVis[pid]=mapPopVis[pid]===false?true:false;
+  refreshMap();buildMapSb();
+}
 function delPolyFromMap(pid){
   if(!confirm('Apagar o polígono desta localização?'))return;
   const idx=DB.pops.findIndex(p=>p.id===pid);if(idx<0)return;
@@ -1791,6 +2111,35 @@ function addPOP(){
   closeModal('ovAddPOP');
   toast(`"${nome}" criado! Agora vá ao Mapa e use "Desenhar Área" para delimitar a região.`);
 }
+function exportXLSX(){
+  // Generate a proper tab-separated file that opens correctly in Google Sheets and Excel
+  const headers=['#','MAC','Localização','Ramal','CTO','Contrato','Lacre','Sinal (dBm)','Tipo','Status','Observação'];
+  const rows=DB.clientes.map((c,i)=>{
+    const pop=getPOP(c.popId),r=getRamal(c.ramalId),st=getStatus(c);
+    return[i+1,c.mac,pop?.nome||'',r?'H.'+r.nome:'',getCTON(c.ctoId),c.contrato||'',c.lacre||'',
+      c.sinalCliente!=null?c.sinalCliente:'',c.tipo||'BD PF',st.txt,c.obs||''];
+  });
+  // Build XML spreadsheet (opens in Excel/Sheets perfectly)
+  let xml='<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?>';
+  xml+='<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">';
+  xml+='<Worksheet ss:Name="Clientes FiberCorp"><Table>';
+  // Header row
+  xml+='<Row>'+headers.map(h=>'<Cell><Data ss:Type="String">'+h+'</Data></Cell>').join('')+'</Row>';
+  // Data rows
+  rows.forEach(row=>{
+    xml+='<Row>'+row.map((v,i)=>{
+      const t=(i===0||i===7)?'Number':'String';
+      const val=String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return'<Cell><Data ss:Type="'+(t==='Number'&&v!==''?'Number':'String')+'">'+val+'</Data></Cell>';
+    }).join('')+'</Row>';
+  });
+  xml+='</Table></Worksheet></Workbook>';
+  const blob=new Blob([xml],{type:'application/vnd.ms-excel;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='fibercorp_clientes.xls';a.click();
+  URL.revokeObjectURL(url);
+  toast('Planilha exportada! Abra com Excel ou Google Sheets.');
+}
 function onSearch(){cliPage=1;renderCliTable();}
 function exportCSV(){
   const rows=[['MAC','Localiz.','Ramal','CTO','Contrato','Lacre','Sinal','Tipo','Status','Obs']];
@@ -1811,8 +2160,8 @@ function populateAllSelects(){
 /* MAP ANIMATIONS */
 const mapStyle=document.createElement('style');
 mapStyle.textContent=`
-@keyframes mapPulseO{0%,100%{box-shadow:0 0 0 4px rgba(232,101,10,.5),0 2px 8px rgba(0,0,0,.3);}50%{box-shadow:0 0 0 12px rgba(232,101,10,.1),0 2px 8px rgba(0,0,0,.3);}}
-@keyframes mapPulseG{0%,100%{box-shadow:0 0 0 4px rgba(14,169,107,.4),0 2px 8px rgba(0,0,0,.3);}50%{box-shadow:0 0 0 10px rgba(14,169,107,.08),0 2px 8px rgba(0,0,0,.3);}}
+@keyframes mapPulseO{0%,100%{opacity:.9;transform:scale(1);box-shadow:0 2px 10px rgba(255,107,0,.45)}50%{opacity:1;transform:scale(1.13);box-shadow:0 4px 20px rgba(255,107,0,.75)}}50%{box-shadow:0 0 0 12px rgba(232,101,10,.1),0 2px 8px rgba(0,0,0,.3);}}
+@keyframes mapPulseG{0%,100%{opacity:.9;transform:scale(1);box-shadow:0 2px 10px rgba(14,169,107,.45)}50%{opacity:1;transform:scale(1.13);box-shadow:0 4px 20px rgba(14,169,107,.75)}}50%{box-shadow:0 0 0 10px rgba(14,169,107,.08),0 2px 8px rgba(0,0,0,.3);}}
 @keyframes polyFill{0%,100%{fill-opacity:0.18;}50%{fill-opacity:0.32;}}
 @keyframes polyFillG{0%,100%{fill-opacity:0.14;}50%{fill-opacity:0.25;}}
 .pop-area-poly-and{animation:polyFill 2.4s ease-in-out infinite;}
@@ -1936,6 +2285,7 @@ function rebuildAll(){
 
 /* INIT */
 loadDB();populateAllSelects();rebuildAll();
+// Map is initialized on first navigation to the map page
 </script>
 </body>
 </html>
